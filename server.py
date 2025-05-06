@@ -14,22 +14,22 @@ print("Waiting for connection...")
 incomingSocket, incomingAddress = myTCPSocket.accept()
 
 # Setup timezone
-pst = pytz.timezone("US/Pacific")
+pst = pytz.timezone("US/Pacific")   # Define Pacific Timezone
 
 try:
     # Connect to database
     db_connection = psycopg2.connect("postgresql://neondb_owner:npg_ognWcMRFyS52@ep-withered-fog-a444emeu-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require")
-    cursor = db_connection.cursor()
+    cursor = db_connection.cursor() # Create cursor to execute SQL queries
     print("Connected to PostgreSQL")
 
     while True:
         # Wait for client request
         clientData = incomingSocket.recv(1024).decode('utf-8')
         if not clientData:
-            break
+            break   # Exit if no data is received
 
         if clientData == "1":
-            # Moisture past 3 hours (Smart Fridge #1)
+            # QUERY 1 : Moisture past 3 hours (Smart Fridge #1)
             three_hours_ago = datetime.utcnow() - timedelta(hours=3)
             cursor.execute('''
                 SELECT AVG(CAST(payload ->> 'Moisture Meter - Moisture Sensor - Smart Refrigerator' AS FLOAT))
@@ -41,7 +41,7 @@ try:
             response = f"Avg moisture in past 3 hours is {round(result[0], 2)}% RH" if result[0] else "No moisture data found."
 
         elif clientData == "2":
-            # Water usage in gallons (Smart Dishwasher)
+            # QUERY 2 : Water usage in gallons (Smart Dishwasher)
             cursor.execute('''
                 SELECT AVG(CAST(payload ->> 'YF-S201 - Water Consumption Sensor - Smart Dishwasher' AS FLOAT))
                 FROM "Data_virtual"
@@ -55,7 +55,7 @@ try:
                 response = "No water data found."
 
         elif clientData == "3":
-            # Total electricity use in kWh (3 devices)
+            # QUERY 3 : Total electricity use in kWh (3 devices)
             cursor.execute('''
                 SELECT device_id, SUM(CAST(ammeter_reading AS FLOAT)) AS total_kwh
                 FROM (
@@ -75,12 +75,12 @@ try:
             result = cursor.fetchone()
             response = f"{result[0]} used the most electricity at {round(result[1], 2)} kWh" if result else "No energy data found."
 
-        elif clientData.lower() == "quit":
+        elif clientData.lower() == "quit":  # Handle 'quit' input
             response = "Connection closed."
             incomingSocket.send(response.encode('utf-8'))
             break
 
-        else:
+        else:   # Handle invalid input
             response = (
                 "Sorry, invalid query. Please enter:\n"
                 "1 for avg fridge moisture\n"
@@ -88,13 +88,13 @@ try:
                 "3 for highest electricity use"
             )
 
-        incomingSocket.send(response.encode('utf-8'))
+        incomingSocket.send(response.encode('utf-8'))   # Send results to client
 
 except Exception as e:
     print("Error:", e)
     incomingSocket.send(b"An error occurred.")
 
-finally:
+finally:    # Close cursor, connection, & socket
     cursor.close()
     db_connection.close()
     myTCPSocket.close()
