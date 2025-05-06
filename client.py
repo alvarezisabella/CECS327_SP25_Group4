@@ -1,30 +1,33 @@
 #client.py
 import socket
 
-serverIP = input("Enter server IP Address: ")
-serverPort = int(input("Enter server port number: "))
-maxBytesToReceive = 1024
+
+server_ip = input("Enter the server IP address: ")
+server_port = int(input("Enter the server port: "))
+
 myTCPSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-myTCPSocket.connect((serverIP, serverPort))
-validQuery = False
+myTCPSocket.connect((server_ip, server_port))
 
-while True:
-    myMessage = input("Please choose one of the following queries to process\n"
-                         "1. What is the average moisture inside my kitchen fridge in the past three hours?\n"
-                             "2. What is the average water consumption per cycle in my smart dishwasher?\n"
-                             "3. Which device consumed more electricity among my three IoT devices (two refrigerators and a dishwasher)?\n")
-    if myMessage == "exit":
-        break
-    selection = int(myMessage)
-    if 1 <= selection <= 3:
-        validQuery = True
+
+while True: # Starts an infinite loop to send queries
+    print("\nChoose a query:")
+    print("1) What is the average moisture inside my kitchen fridge in the past 3 hours?")
+    print("2) What is the average water consumption per cycle in my smart dishwasher?")
+    print("3) Which device consumed more electricity among my three IoT devices (two refrigerators and a dishwasher)?)")
+    print("Type 'quit' to exit.")
+
+    user_input = input("Enter your choice (1, 2, 3 or 'quit'): ")   # User's choice
+
+    if user_input in ["1", "2", "3", "quit"]:   # Check for valid input
+        myTCPSocket.send(user_input.encode('utf-8'))    # Sends input to server
+
+        if user_input == "quit":    # Exit loop if 'quit' is entered
+            break
+
+        response = myTCPSocket.recv(1024).decode('utf-8')   # Receive server response
+        print("Server says:", response)
     else:
-        print("Sorry, this query cannot be processes. Please try one of the following:\n"
-                         "1. What is the average moisture inside my kitchen fridge in the past three hours?\n"
-                             "2. What is the average water consumption per cycle in my smart dishwasher?\n"
-                             "3. Which device consumed more electricity among my three IoT devices (two refrigerators and a dishwasher)?\n")
+        print("Invalid choice. Please type 1, 2, 3, or 'quit'.")
 
-    myTCPSocket.send(bytearray(str(myMessage), encoding='utf-8'))
-    serverResponse = myTCPSocket.recv(maxBytesToReceive).decode('utf-8')
-    print("Server Response: ", serverResponse)
 myTCPSocket.close()
+print("Disconnected from server.")
